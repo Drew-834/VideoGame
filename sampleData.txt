@@ -1,0 +1,20 @@
+101, Halo Combat Evolved, Xbox, 2001, 29.99, true
+102, Super Mario 64, N64, 1996, 45.00, false
+103, The Legend of Zelda Ocarina of Time, N64, 1998, 55.50, false
+104, RuneScape, PC, 2001, 0.00, true
+105, League of Legends, PC, 2009, 0.00, true
+106, Call of Duty Black Ops, Xbox 360, 2010, 15.99, true
+107, Super Smash Bros, N64, 1999, 60.00, true
+108, Elden Ring, PS5, 2022, 59.99, true
+109, Cyberpunk 2077, PC, 2020, 29.99, false
+110, Minecraft, PC, 2011, 26.95, true
+111, Skyrim, PS3, 2011, 19.99, false
+112, Grand Theft Auto V, PS4, 2013, 29.99, true
+113, Red Dead Redemption 2, PS4, 2018, 39.99, true
+114, The Witcher 3, Xbox One, 2015, 19.99, false
+115, Pokemon Red, Gameboy, 1998, 75.00, false
+116, Mario Kart 8 Deluxe, Switch, 2017, 49.99, true
+117, Animal Crossing New Horizons, Switch, 2020, 49.99, true
+118, Resident Evil 4, Gamecube, 2005, 35.00, false
+119, Final Fantasy VII, PS1, 1997, 40.00, false
+120, Portal 2, PC, 2011, 9.99, true
