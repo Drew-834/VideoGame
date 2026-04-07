@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="inventory.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="914"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="games" custom_title="0" dock_id="1" table="4,5:maingames"/><dock_state state="000000ff00000000fd00000001000000020000000000000000fc0100000001fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000011e00ffffff000000000000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="SQL 1*">CREATE TABLE games (
+    id INTEGER PRIMARY KEY,
+    title TEXT NOT NULL,
+    platform TEXT NOT NULL,
+    releaseYear INTEGER,
+    price REAL,
+    isMultiplayer BOOLEAN
+);
+
+INSERT INTO games (id, title, platform, releaseYear, price, isMultiplayer) VALUES 
+(101, 'Halo Combat Evolved', 'Xbox', 2001, 29.99, 1),
+(102, 'Super Mario 64', 'N64', 1996, 45.00, 0),
+(103, 'Zelda Ocarina of Time', 'N64', 1998, 55.50, 0),
+(104, 'RuneScape', 'PC', 2001, 0.00, 1),
+(105, 'League of Legends', 'PC', 2009, 0.00, 1),
+(106, 'Call of Duty Black Ops', 'Xbox 360', 2010, 15.99, 1),
+(107, 'Super Smash Bros', 'N64', 1999, 60.00, 1),
+(108, 'Elden Ring', 'PS5', 2022, 59.99, 1),
+(109, 'Cyberpunk 2077', 'PC', 2020, 29.99, 0),
+(110, 'Minecraft', 'PC', 2011, 26.95, 1),
+(111, 'Skyrim', 'PS3', 2011, 19.99, 0),
+(112, 'Grand Theft Auto V', 'PS4', 2013, 29.99, 1),
+(113, 'Red Dead Redemption 2', 'PS4', 2018, 39.99, 1),
+(114, 'The Witcher 3', 'Xbox One', 2015, 19.99, 0),
+(115, 'Pokemon Red', 'Gameboy', 1998, 75.00, 0),
+(116, 'Mario Kart 8 Deluxe', 'Switch', 2017, 49.99, 1),
+(117, 'Animal Crossing', 'Switch', 2020, 49.99, 1),
+(118, 'Resident Evil 4', 'Gamecube', 2005, 35.00, 0),
+(119, 'Final Fantasy VII', 'PS1', 1997, 40.00, 0),
+(120, 'Portal 2', 'PC', 2011, 9.99, 1);</sql><current_tab id="0"/></tab_sql></sqlb_project>

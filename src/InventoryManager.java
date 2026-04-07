@@ -1,120 +1,167 @@
-import java.io.File;
-import java.io.FileNotFoundException;
+import java.sql.*;
 import java.util.ArrayList;
-import java.util.Scanner;
 
 /**
  * Drew Carrillo
  * CEN 3024C
  * 03/10/2026
- * Inventory Manager
- * This is the Business Logic layer. It manages the ArrayList of VideoGame objects.
- * Contains all CRUD operations and the custom calculation (away from the UI).
- * The UI (MainApp) calls these methods to perform actions on the data.
+ * CLASS NAME: InventoryManager
+ * * This is the Business Logic layer. It manages the SQLite database connection.
+ * It contains all CRUD operations and the custom calculation (away from the UI).
+ * Safety checks have been added to ensure the program never crashes if the
+ * user clicks a button before connecting to the database.
  */
 public class InventoryManager {
-    // This is our "database" - an ArrayList to store all VideoGame objects
-    private ArrayList<VideoGame> inventory;
+    // We replaced the temporary ArrayList with a permanent Database Connection
+    private Connection conn;
 
-    //New Inventory Constructor!
+    /**
+     * Constructor is empty now since we don't need to build an ArrayList.
+     * The connection remains null until the user loads the database.
+     */
     public InventoryManager() {
-        inventory = new ArrayList<>();
     }
 
     /**
-     * Helper method for unit testing - returns the current size of inventory
-     * returns The number of games in the inventory
+     * Connects to the SQLite database file.
+     * The rubric requires us to NOT hardcode this so the professor can use their own file!
+     * * @param filepath Location/Name of the database file (e.g., "inventory.db")
+     * @return true if connected successfully, false if file not found/error
      */
-    public int getInventorySize() {
-        return inventory.size();
-    }
-
-    /**
-     * Reads game data from a text file and populates the inventory
-     * Each line is supposed to be in format: ID, Title, Platform, Year, Price, Multiplayer
-     *  filepath =  Location of the text file
-     * returns true if file was read successfully, false if file not found
-     */
-    public boolean loadDataFromFile(String filepath) {
+    public boolean connectToDatabase(String filepath) {
         try {
-            File file = new File(filepath);
-            Scanner fileScanner = new Scanner(file);
-
-            // Read each line of the file
-            while (fileScanner.hasNextLine()) {
-                String line = fileScanner.nextLine();
-                String[] parts = line.split(",");
-
-                // Make sure line has all 6 required fields
-                if (parts.length == 6) {
-                    try {
-                        // Parse each field from the line
-                        int id = Integer.parseInt(parts[0].trim());
-                        String title = parts[1].trim();
-                        String platform = parts[2].trim();
-                        int year = Integer.parseInt(parts[3].trim());
-                        double price = Double.parseDouble(parts[4].trim());
-                        boolean multi = Boolean.parseBoolean(parts[5].trim());
-
-                        // Only add if ID doesn't already exist (avoid duplicates)
-                        if (findGameById(id) == null) {
-                            inventory.add(new VideoGame(id, title, platform, year, price, multi));
-                        }
-                    } catch (NumberFormatException e) {
-                        // Skip lines with invalid number formats
-                        System.out.println("Warning: Skipping invalid line: " + line);
-                    }
-                }
-            }
-            fileScanner.close();
-            return true; // File was successfully read
-        } catch (FileNotFoundException e) {
-            return false; // File not found
-        } catch (Exception e) {
-            // Catch any other unexpected errors
-            System.out.println("Warning: Unexpected error reading file: " + e.getMessage());
-            return true; // Still return true for partial success
+            // jdbc:sqlite: tells Java which database driver to use
+            String url = "jdbc:sqlite:" + filepath;
+            conn = DriverManager.getConnection(url);
+            return true;
+        } catch (SQLException e) {
+            System.out.println("Warning: Unexpected error connecting to DB: " + e.getMessage());
+            return false;
         }
     }
 
     /**
-     * Adds a new game to the inventory
-     *  game The VideoGame object to add
-     *  true if added successfully, false if ID already exists
+     * Helper method to grab all games from the database and put them in a list.
+     * This replaces reading a text file line-by-line.
+     * * @return An ArrayList containing all VideoGame objects currently in the database.
+     */
+    public ArrayList<VideoGame> getAllGames() {
+        ArrayList<VideoGame> inventory = new ArrayList<>();
+
+        // SAFETY CHECK: If the database isn't connected yet, return an empty list instead of crashing!
+        if (conn == null) {
+            return inventory;
+        }
+
+        String sql = "SELECT * FROM games";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            // Loop through the database results and turn them into Java objects
+            while (rs.next()) {
+                inventory.add(new VideoGame(
+                        rs.getInt("id"),
+                        rs.getString("title"),
+                        rs.getString("platform"),
+                        rs.getInt("releaseYear"),
+                        rs.getDouble("price"),
+                        rs.getBoolean("isMultiplayer")
+                ));
+            }
+        } catch (SQLException e) {
+            System.out.println("Warning: Error reading database.");
+        }
+        return inventory;
+    }
+
+    /**
+     * Adds a newly created game to the SQLite database.
+     * * @param game The VideoGame object to insert
+     * @return true if successfully added, false if ID already exists or DB error
      */
     public boolean addGame(VideoGame game) {
-        // Check if game with this ID already exists
-        if (findGameById(game.getGameID()) != null) {
-            return false; // Duplicate ID found
+        // SAFETY CHECK: Ensure DB is connected and prevent duplicate IDs!
+        if (conn == null || findGameById(game.getGameID()) != null) {
+            return false;
         }
-        inventory.add(game);
-        return true; // Successfully added
+
+        String sql = "INSERT INTO games(id, title, platform, releaseYear, price, isMultiplayer) VALUES(?,?,?,?,?,?)";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, game.getGameID());
+            pstmt.setString(2, game.getTitle());
+            pstmt.setString(3, game.getPlatform());
+            pstmt.setInt(4, game.getReleaseYear());
+            pstmt.setDouble(5, game.getPrice());
+            pstmt.setBoolean(6, game.isMultiplayer());
+            pstmt.executeUpdate();
+            return true; // Successfully added
+        } catch (SQLException e) {
+            return false;
+        }
     }
 
     /**
-     * Removes a game from the inventory by ID
-     *  id The ID of the game to remove
-     *
+     * Removes a game from the database using its unique ID.
+     * * @param id The ID of the game to delete
+     * @return true if successfully removed, false if not found
      */
     public boolean removeGame(int id) {
+        // SAFETY CHECK
+        if (conn == null) return false;
+
         VideoGame target = findGameById(id);
         if (target != null) {
-            inventory.remove(target);
-            return true; // Successfully removed
+            String sql = "DELETE FROM games WHERE id = ?";
+            try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+                pstmt.setInt(1, id);
+                pstmt.executeUpdate();
+                return true;
+            } catch (SQLException e) {
+                return false;
+            }
         }
         return false; // ID not found
     }
 
     /**
-     * Returns a formatted string of all games in the inventory
-     * @return String containing all game information, or empty message if no games
+     * Updates an existing game in the database.
+     * * @param game The VideoGame object containing the updated information
+     * @return true if successful, false if error
+     */
+    public boolean updateGame(VideoGame game) {
+        // SAFETY CHECK
+        if (conn == null) return false;
+
+        String sql = "UPDATE games SET title = ?, platform = ?, releaseYear = ?, price = ?, isMultiplayer = ? WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, game.getTitle());
+            pstmt.setString(2, game.getPlatform());
+            pstmt.setInt(3, game.getReleaseYear());
+            pstmt.setDouble(4, game.getPrice());
+            pstmt.setBoolean(5, game.isMultiplayer());
+            pstmt.setInt(6, game.getGameID());
+            pstmt.executeUpdate();
+            return true;
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
+    /**
+     * Returns a formatted string of all games in the inventory for the GUI text area.
+     * * @return String containing all game information
      */
     public String displayInventory() {
-        if (inventory.isEmpty()) {
-            return "The inventory is currently empty.";
+        // SAFETY CHECK: Warn the user instead of crashing
+        if (conn == null) {
+            return "Please connect to the database first (Type the DB name and click Load DB).";
         }
 
-        // Build a string with all game information
+        ArrayList<VideoGame> inventory = getAllGames();
+        if (inventory.isEmpty()) {
+            return "The database is currently empty.";
+        }
+
         StringBuilder sb = new StringBuilder();
         for (VideoGame game : inventory) {
             sb.append(game.toString()).append("\n");
@@ -123,30 +170,51 @@ public class InventoryManager {
     }
 
     /**
-     * CUSTOM ACTION: Calculates the total dollar value of all games in inventory
-     * This is the mathematical calculation required by the assignment
-     *
+     * CUSTOM ACTION: Calculates the total dollar value using a mathematical SQL query.
+     * * @return double representing the total sum of all prices
      */
     public double calculateTotalValue() {
-        double total = 0.0;
-        // Loop through all games and add up their prices
-        for (VideoGame game : inventory) {
-            total += game.getPrice();
+        // SAFETY CHECK
+        if (conn == null) return 0.0;
+
+        String sql = "SELECT SUM(price) AS total FROM games";
+        try (Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getDouble("total");
+            }
+        } catch (SQLException e) {
+            System.out.println("Calculation error.");
         }
-        return total;
+        return 0.0;
     }
 
     /**
-     * Helper method to find a game by its ID
-     * return The VideoGame object if found, null if not found
+     * Helper method to find a specific game by its ID in the database.
+     * * @param id The ID to search for
+     * @return The VideoGame object if found, null if not found
      */
     public VideoGame findGameById(int id) {
-        // Linear search through the ArrayList
-        for (VideoGame game : inventory) {
-            if (game.getGameID() == id) {
-                return game; // Found it!
+        // SAFETY CHECK
+        if (conn == null) return null;
+
+        String sql = "SELECT * FROM games WHERE id = ?";
+        try (PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setInt(1, id);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return new VideoGame(
+                        rs.getInt("id"),
+                        rs.getString("title"),
+                        rs.getString("platform"),
+                        rs.getInt("releaseYear"),
+                        rs.getDouble("price"),
+                        rs.getBoolean("isMultiplayer")
+                );
             }
+        } catch (SQLException e) {
+            // Error handling
         }
-        return null; // Not found after checking all games
+        return null; // Not found
     }
 }
